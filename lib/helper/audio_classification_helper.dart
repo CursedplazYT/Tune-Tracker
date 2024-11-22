@@ -21,7 +21,8 @@ import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 class AudioClassificationHelper {
-  static const _modelPath = 'assets/models/soundclassifier_with_metadata.tflite';
+  static const _modelPath =
+      'assets/models/soundclassifier_with_metadata.tflite';
   static const _labelsPath = 'assets/models/labels.txt';
 
   late Interpreter _interpreter;

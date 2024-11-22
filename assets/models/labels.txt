@@ -1,2 +1,2 @@
-0 Background Noise
-1 Piano Sound
+Background Noise
+Piano Sound
