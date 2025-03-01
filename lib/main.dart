@@ -23,7 +23,7 @@ class AudioClassificationApp extends StatelessWidget {
 
 
   // This widget is the root of your application.
-  @overrid
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Audio Classification',
