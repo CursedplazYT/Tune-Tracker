@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
+
 import 'helper/audio_classification_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,15 +12,18 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
+
 void main() {
   runApp(const AudioClassificationApp());
 }
 
+
 class AudioClassificationApp extends StatelessWidget {
   const AudioClassificationApp({super.key});
 
+
   // This widget is the root of your application.
-  @override
+  @overrid
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Audio Classification',
@@ -31,14 +35,18 @@ class AudioClassificationApp extends StatelessWidget {
   }
 }
 
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
+
   final String title;
+
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
+
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   bool isRunning = false;
@@ -51,8 +59,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   bool activated = false;
   StreamSubscription<Map<dynamic, dynamic>>? recognitionStream;
 
+
   static const platform =
-      MethodChannel('org.tensorflow.audio_classification/audio_record');
+  MethodChannel('org.tensorflow.audio_classification/audio_record');
+
 
   // The YAMNet/classifier model used in this code example accepts data that
   // represent single-channel, or mono, audio clips recorded at 16kHz in 2.752
@@ -60,10 +70,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   static const _sampleRate = 16000; // 16kHz
   static const _expectAudioLength = 2752; // milliseconds
   final int _requiredInputBuffer =
-      (16000 * (_expectAudioLength / 1000)).toInt();
+  (16000 * (_expectAudioLength / 1000)).toInt();
   late AudioClassificationHelper _helper;
   List<MapEntry<String, double>> _classification = List.empty();
   Timer? _timer;
+
 
   @override
   initState() {
@@ -72,6 +83,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     _initRecorder();
     super.initState();
   }
+
 
   void initTicker() {
     _ticker = createTicker((elapsed) {
@@ -88,14 +100,17 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
+
   @override
   void dispose() {
     _ticker.dispose();
     super.dispose();
     _timer?.cancel();
 
+
     _closeRecorder();
   }
+
 
   void _startRecorder() {
     try {
@@ -104,6 +119,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       log("Failed to start record: '${e.message}'.");
     }
   }
+
 
   Future<bool> _requestPermission() async {
     try {
@@ -117,17 +133,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
+
   Future<Float32List> _getAudioFloatArray() async {
     var audioFloatArray = Float32List(0);
     try {
       final Float32List result =
-          await platform.invokeMethod('getAudioFloatArray');
+      await platform.invokeMethod('getAudioFloatArray');
       audioFloatArray = result;
     } on PlatformException catch (e) {
       log("Failed to get audio array: '${e.message}'.");
     }
     return audioFloatArray;
   }
+
 
   Future<void> _closeRecorder() async {
     try {
@@ -137,6 +155,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       log("Failed to close recorder.");
     }
   }
+
 
   Future<void> _initRecorder() async {
     _helper = AudioClassificationHelper();
@@ -154,6 +173,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
+
   Future<void> _initializeRecorder() async {
     await Permission.microphone.request();
     await _recorder.openAudioSession();
@@ -161,15 +181,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     audioFilePath = '${tempDir.path}/audio.aac';
   }
 
+
   void _startTimer() {
+
     if (!_ticker.isActive) {
       _ticker.start();
     }
 
+
     setState(() {
       isRunning = true;
+
     });
+    graceTimer = 0;
   }
+
 
   void _stopTimer() {
     _ticker.stop();
@@ -178,26 +204,30 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
+
   void _resetTimer() {
     setState(() {
       duration = const Duration();
       secondsCounter = 0;
     });
+    graceTimer = 0;
   }
+
 
   void _startRecording() {
     _recorder.startRecorder(toFile: audioFilePath);
     _startRecorder();
 
+
     _timer = Timer.periodic(const Duration(milliseconds: _expectAudioLength),
-        (timer) {
-      // classify here
-      _runInference();
-    });
+            (timer) {
+          _runInference();
+        });
     setState(() {
       isRecording = true;
     });
   }
+
 
   void _stopRecording() {
     _recorder.stopRecorder();
@@ -207,55 +237,124 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
+
   void _restartRecording() async {
     // _checkAudio(); // processes current recording
     _stopRecording();
     _startRecording();
   }
 
+
   void _activateFeature() {
     if (isRecording) {
       _stopRecording();
+      _stopTimer();
+      graceTimer = 0;
     } else {
       _startRecording();
+      _startTimer();
     }
 
+
     activated = !activated;
+
 
     // Logic for activating the feature goes here
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content:
-              Text('Feature is ${activated ? 'activated' : 'deactivated'}!')),
+          Text('Feature is ${activated ? 'activated' : 'deactivated'}!')),
     );
   }
 
+
+  int simulationDuration = 45;
+  DateTime? startSimulation;
+  bool isSimulatedMode = true; // set it to False if not testing
+
+
   Future<void> _runInference() async {
+    if (isSimulatedMode) {
+      startSimulation ??= DateTime.now();
+
+
+      final secondsElapsed =
+          DateTime.now().difference(startSimulation!).inSeconds;
+
+
+      print(
+          "Simulated Mode: $isSimulatedMode, Seconds Elapsed: ${DateTime.now().difference(startSimulation!).inSeconds}");
+
+
+      if (secondsElapsed < simulationDuration) {
+        _classification = [MapEntry("Background Noise", 0.9)];
+      } else {
+        _classification = [MapEntry("Piano Sound", 0.9)];
+      }
+
+
+      _checkAudio();
+      return;
+    }
+
+
+    // ----If we are not simulating, the real inference will run below ----
     Float32List inputArray = await _getAudioFloatArray();
     final result =
-        await _helper.inference(inputArray.sublist(0, _requiredInputBuffer));
+    await _helper.inference(inputArray.sublist(0, _requiredInputBuffer));
+
 
     _classification = (result.entries.toList()
-          ..sort(
+      ..sort(
             (a, b) => a.value.compareTo(b.value),
-          ))
+      ))
         .reversed
         .toList();
     _checkAudio();
   }
 
+
+  String detectionStatus = "No sound detected";
+  double graceTimer = 0;
+
+
   void _checkAudio() async {
+    String elapsedTime =
+        '${duration.inHours}:${(duration.inMinutes % 60).toString().padLeft(2, '0')}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
+    for (int i = 0; i < _classification.length; i++) {
+      String label = _classification[i].key;
+      double conf = _classification[i].value;
+      print('Elapsed Time: $elapsedTime');
+      print('Label: $label');
+      print('Confidence: $conf');
+    }
     String recognizedLabel = _classification[0].key;
     double confidence = _classification[0].value;
+    print("--------------------");
     print('Recognized: $recognizedLabel, Confidence: $confidence');
+    print("--------------------");
 
-    // Check if the recognized label indicates music and the confidence is high enough
+
     if (recognizedLabel == 'Piano Sound' && confidence > 0.4) {
+      setState(() {
+        detectionStatus = "Piano Sound detected!";
+        graceTimer = 0;
+      });
+      graceTimer = 0;
       _startTimer(); // Start the timer if music is detected
-    } else if (confidence > 0.4) { //Background noise detected
-      _stopTimer(); // Stop the timer if it's background noise
+    } else if (confidence > 0.4) {  // background noise
+      setState(() {
+        detectionStatus = "Background noise detected.";
+      });
+      graceTimer += _expectAudioLength / 1000;
+      print(graceTimer);
+      if (graceTimer > 30) {
+        _stopTimer(); // Stop the timer if it's background noise
+        graceTimer = 0;
+      }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -291,24 +390,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 ),
                 Text(
                   '${duration.inHours.toString().padLeft(2, '0')}:${(duration.inMinutes % 60).toString().padLeft(2, '0')}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}',
-                  style: const TextStyle(fontSize: 48, color: Colors.white),
+                  style: const TextStyle(fontSize: 48, color: Colors.black),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              detectionStatus,
+              style: const TextStyle(fontSize: 18, color: Colors.black),
+              textAlign: TextAlign.center,
             ),
             const Spacer(flex: 1),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ElevatedButton(
-                  onPressed: isRunning ? _stopTimer : _startTimer,
-                  child: Text(isRunning ? 'Stop' : 'Start',
-                      style: TextStyle(color: Colors.black)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // Dark blue color
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                  ),
-                ),
+                // delete the start and stop timer since it is useless
                 const SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: _resetTimer,
@@ -339,57 +435,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
     );
   }
-
-// @override
-// Widget build(BuildContext context) {
-//   return Scaffold(
-//     backgroundColor: Colors.white,
-//     appBar: AppBar(
-//       title: Text(widget.title),
-//       backgroundColor: Colors.black.withOpacity(0.5),
-//     ),
-//     body: _buildBody(),
-//   );
-// }
-//
-// Widget _buildBody() {
-//   if (_showError) {
-//     return const Center(
-//       child: Text(
-//         "Audio recording permission required for audio classification",
-//         textAlign: TextAlign.center,
-//       ),
-//     );
-//   } else {
-//     return ListView.separated(
-//       padding: const EdgeInsets.all(10),
-//       physics: const BouncingScrollPhysics(),
-//       shrinkWrap: true,
-//       itemCount: _classification.length,
-//       itemBuilder: (context, index) {
-//         final item = _classification[index];
-//         return Row(
-//           children: [
-//             SizedBox(
-//               width: 200,
-//               child: Text(item.key),
-//             ),
-//             Flexible(
-//                 child: LinearProgressIndicator(
-//               backgroundColor: _backgroundProgressColorList[
-//                   index % _backgroundProgressColorList.length],
-//               color: _primaryProgressColorList[
-//                   index % _primaryProgressColorList.length],
-//               value: item.value,
-//               minHeight: 20,
-//             ))
-//           ],
-//         );
-//       },
-//       separatorBuilder: (BuildContext context, int index) => const SizedBox(
-//         height: 10,
-//       ),
-//     );
-//   }
-// }
 }
+
+
+
+
+
