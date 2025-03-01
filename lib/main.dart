@@ -438,6 +438,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 }
 
 
+//Overview
+// This app tracks the playtime of a piano player. It uses TensorFlow Lite to perform real-time audio classification. It listens to the microphone input and processes and classifies sounds based on a pre-trained model.
+//
+// Features
+// Real-time Audio Classification: Uses TensorFlow Lite to classify incoming Audio.
+// User-Friendly Interface: Simple and interactive UI for easy usability.
+// Customized Model Support: Ability to swap out TFLlite models for different sound classification tasks.
+
 
 
 
